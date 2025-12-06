@@ -1,220 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Admin Panel - FUO Plus</title>
-<style>
-  body { font-family: Arial; padding: 20px; }
-  .section { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius:10px; }
-  input, textarea, select, button {
-    width: 100%; padding: 10px; margin: 6px 0;
-    border-radius: 5px; border: 1px solid #ccc;
-  }
-  button { cursor: pointer; background: #008cff; color:white; }
-  button:hover { opacity: 0.8; }
-</style>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    form { border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; }
+    h2 { margin-top: 40px; }
+    
+    #loader {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      color: #fff; font-size: 32px;
+      display: flex; justify-content: center; align-items: center;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
 
-<script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js";
+<h1>Admin: Add Products</h1>
 
-const supabaseUrl = "https://nhopxxebahavtziafmnd.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ob3B4eGViYWhhdnR6aWFmbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5ODA4MTMsImV4cCI6MjA4MDU1NjgxM30.3okIjvZQNM56a8qIdMq8P677xXWJJLRo8cgEMMDqBh8";
+<div id="loader">Uploading... Please wait ⏳</div>
 
-window.supabase = createClient(supabaseUrl, supabaseKey);
 
-// ---------------- LOGIN ----------------
-window.login = function () {
-  const pass = document.getElementById("adminPass").value;
-  if (pass === "1234") {
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("adminPanel").style.display = "block";
-  } else {
-    alert("Wrong Password!");
-  }
-};
+<!-- PROPERTY -->
+<h2>Add Property</h2>
+<form id="propertyForm">
+  <label>4 Images:</label><br>
+  <input type="file" id="propertyImages" multiple accept="image/*" required><br><br>
 
-// ---------- IMAGE UPLOAD FUNCTION ----------
-window.uploadImages = async function(files, bucket) {
-  const urls = [];
-  for (const file of files) {
-    const fileName = Date.now() + "_" + file.name;
-    const { error } = await supabase.storage.from(bucket).upload(fileName, file);
-    if (error) return alert(error.message);
-    const { data: publicURL } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    urls.push(publicURL.publicUrl);
+  <label>Title:</label><br>
+  <input type="text" id="propertyTitle" required><br><br>
+
+  <label>Price:</label><br>
+  <input type="number" id="propertyPrice" required><br><br>
+
+  <label>Type:</label><br>
+  <select id="propertyType">
+    <option value="sell">Sell</option>
+    <option value="rent">Rent</option>
+  </select><br><br>
+
+  <label>Short Description:</label><br>
+  <textarea id="propertyShort" required></textarea><br><br>
+
+  <label>Long Description:</label><br>
+  <textarea id="propertyLong"></textarea><br><br>
+
+  <button type="submit">Submit Property</button>
+</form>
+
+
+<!-- FOOD -->
+<h2>Add Food</h2>
+<form id="foodForm">
+  <label>Image:</label><br>
+  <input type="file" id="foodImage" accept="image/*" required><br><br>
+
+  <label>Title:</label><br>
+  <input type="text" id="foodTitle" required><br><br>
+
+  <label>Short Description:</label><br>
+  <textarea id="foodShort" required></textarea><br><br>
+
+  <label>Long Description:</label><br>
+  <textarea id="foodLong"></textarea><br><br>
+
+  <h4>Price Options:</h4>
+  <div id="variantList"></div>
+  <button type="button" onclick="addVariant()">+ Add Price Option</button>
+  <br><br>
+
+  <button type="submit">Submit Food</button>
+</form>
+
+
+<!-- ITEMS -->
+<h2>Add Item</h2>
+<form id="itemForm">
+  <label>4 Images:</label><br>
+  <input type="file" id="itemImages" multiple accept="image/*" required><br><br>
+
+  <label>Title:</label><br>
+  <input type="text" id="itemTitle" required><br><br>
+
+  <label>Price:</label><br>
+  <input type="number" id="itemPrice" required><br><br>
+
+  <label>Category:</label><br>
+  <select id="itemCategory">
+    <option value="new">New</option>
+    <option value="used">Used</option>
+  </select><br><br>
+
+  <label>Short Description:</label><br>
+  <textarea id="itemShort" required></textarea><br><br>
+
+  <label>Long Description:</label><br>
+  <textarea id="itemLong"></textarea><br><br>
+
+  <button type="submit">Submit Item</button>
+</form>
+
+
+<!-- SUPABASE SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const supabase = supabase.createClient(
+  "https://nhopxxebahavtziafmnd.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ob3B4eGViYWhhdnR6aWFmbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5ODA4MTMsImV4cCI6MjA4MDU1NjgxM30.3okIjvZQNM56a8qIdMq8P677xXWJJLRo8cgEMMDqBh8"
+);
+
+const loader = document.getElementById("loader");
+function showLoader() { loader.style.display = "flex"; }
+function hideLoader() { loader.style.display = "none"; }
+
+
+// Upload Helper
+async function uploadImages(bucket, files) {
+  let urls = [];
+  for (let file of files) {
+    const filePath = `${bucket}/${Date.now()}-${file.name}`;
+    let { error } = await supabase.storage
+      .from("images")
+      .upload(filePath, file);
+
+    if (error) {
+      console.error(error);
+      alert("Image upload failed!");
+      return null;
+    }
+
+    const { data: url } = supabase.storage
+      .from("images")
+      .getPublicUrl(filePath);
+
+    urls.push(url.publicUrl);
   }
   return urls;
-};
+}
 
-// --------------------------------------------
-// ADD PROPERTY
-// --------------------------------------------
-window.addProperty = async function () {
-  const title = document.getElementById('pTitle').value;
-  const price = document.getElementById('pPrice').value;
-  const type = document.getElementById('pType').value;
-  const short_desc = document.getElementById('pShort').value;
-  const long_desc = document.getElementById('pLong').value;
-  const imagesFile = document.getElementById('pImages').files;
 
-  if (imagesFile.length < 1) return alert("Select at least 1 image");
+/* PROPERTY SUBMIT */
+document.getElementById("propertyForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  showLoader();
 
-  const imageUrls = await uploadImages(imagesFile, "properties");
+  const files = document.getElementById("propertyImages").files;
+  const urls = await uploadImages("property", files);
+  if (!urls) return hideLoader();
 
-  const { error } = await supabase.from("properties").insert({
-    title, price, type, short_desc, long_desc, images: imageUrls
+  let { error } = await supabase.from("properties").insert({
+    images: urls,
+    title: propertyTitle.value,
+    price: propertyPrice.value,
+    type: propertyType.value,
+    short_desc: propertyShort.value,
+    long_desc: propertyLong.value
   });
 
-  if (!error) {
-    alert("Property added successfully!");
-    document.getElementById("pTitle").value = "";
-    document.getElementById("pPrice").value = "";
-    document.getElementById("pShort").value = "";
-    document.getElementById("pLong").value = "";
-    document.getElementById("pImages").value = "";
-  } else alert(error.message);
-};
+  hideLoader();
+  if (error) return alert("DB Insert Error!");
+  alert("Property Added!");
+});
 
-// --------------------------------------------
-// ADD FOOD
-// --------------------------------------------
-window.addVariationField = function() {
+
+/* ADD FOOD PRICE VARIANTS */
+function addVariant() {
   const div = document.createElement("div");
   div.innerHTML = `
-    <input type="text" placeholder="Option Name" class="vName">
-    <input type="number" placeholder="Price" class="vPrice">
+    <input type="text" placeholder="Size (e.g Small)" class="variantTitle" required>
+    <input type="number" placeholder="Price" class="variantPrice" required><br><br>
   `;
-  document.getElementById("variationList").appendChild(div);
-};
+  document.getElementById("variantList").appendChild(div);
+}
 
-window.addFood = async function () {
-  const title = document.getElementById("fTitle").value;
-  const short_desc = document.getElementById("fShort").value;
-  const long_desc = document.getElementById("fLong").value;
-  const imageFile = document.getElementById("fImage").files[0];
 
-  if (!imageFile) return alert("Upload an image");
+/* FOOD SUBMIT */
+document.getElementById("foodForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  showLoader();
 
-  const variationNames = document.getElementsByClassName("vName");
-  const variationPrices = document.getElementsByClassName("vPrice");
-  const variations = [];
+  const files = document.getElementById("foodImage").files;
+  const urls = await uploadImages("food", files);
+  if (!urls) return hideLoader();
 
-  for (let i = 0; i < variationNames.length; i++) {
-    if (variationNames[i].value && variationPrices[i].value) {
-      variations.push({
-        text: variationNames[i].value,
-        price: Number(variationPrices[i].value),
-      });
-    }
-  }
+  let variants = [...document.querySelectorAll(".variantTitle")].map((v, i) => ({
+    title: v.value,
+    price: document.querySelectorAll(".variantPrice")[i].value
+  }));
 
-  if (variations.length === 0) return alert("Add price options");
-
-  const urls = await uploadImages([imageFile], "food");
-
-  const { error } = await supabase.from("food").insert({
-    title, short_desc, long_desc,
+  let { error } = await supabase.from("food").insert({
     image: urls[0],
-    variations
+    title: foodTitle.value,
+    short_desc: foodShort.value,
+    long_desc: foodLong.value,
+    variations: variants
   });
 
-  if (!error) {
-    alert("Food added successfully!");
-    document.getElementById("variationList").innerHTML = "";
-    document.getElementById("fTitle").value = "";
-    document.getElementById("fShort").value = "";
-    document.getElementById("fLong").value = "";
-    document.getElementById("fImage").value = "";
-  }
-};
+  hideLoader();
+  if (error) return alert("DB Insert Error!");
+  alert("Food Added!");
+});
 
-// --------------------------------------------
-// ADD ITEM
-// --------------------------------------------
-window.addItem = async function () {
-  const title = document.getElementById('iTitle').value;
-  const price = document.getElementById('iPrice').value;
-  const category = document.getElementById('iCategory').value;
-  const short_desc = document.getElementById('iShort').value;
-  const long_desc = document.getElementById('iLong').value;
-  const imagesFile = document.getElementById('iImages').files;
 
-  if (imagesFile.length < 1) return alert("Select at least 1 image");
+/* ITEM SUBMIT */
+document.getElementById("itemForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  showLoader();
 
-  const imageUrls = await uploadImages(imagesFile, "items");
+  const files = document.getElementById("itemImages").files;
+  const urls = await uploadImages("items", files);
+  if (!urls) return hideLoader();
 
-  const { error } = await supabase.from("items").insert({
-    title, price, category, short_desc, long_desc, images: imageUrls
+  let { error } = await supabase.from("items").insert({
+    images: urls,
+    title: itemTitle.value,
+    price: itemPrice.value,
+    category: itemCategory.value,
+    short_desc: itemShort.value,
+    long_desc: itemLong.value
   });
 
-  if (!error) {
-    alert("Item added successfully!");
-    document.getElementById("iTitle").value = "";
-    document.getElementById("iPrice").value = "";
-    document.getElementById("iShort").value = "";
-    document.getElementById("iLong").value = "";
-    document.getElementById("iImages").value = "";
-  }
-};
+  hideLoader();
+  if (error) return alert("DB Insert Error!");
+  alert("Item Added!");
+});
 </script>
-</head>
-
-<body>
-<h2>Admin Panel - FUO Plus</h2>
-
-<div id="loginBox">
-  <p>Enter Admin Password</p>
-  <input type="password" id="adminPass">
-  <button onclick="login()">Login</button>
-</div>
-
-<div id="adminPanel" style="display:none;">
-
-  <!-- PROPERTY SECTION -->
-  <h3>Add Property</h3>
-  <div class="section">
-    <input type="text" id="pTitle" placeholder="Title">
-    <input type="number" id="pPrice" placeholder="Price">
-    <select id="pType">
-      <option value="sell">Sell</option>
-      <option value="rent">Rent</option>
-    </select>
-    <textarea id="pShort" placeholder="Short Description"></textarea>
-    <textarea id="pLong" placeholder="Long Description"></textarea>
-    <input type="file" id="pImages" multiple>
-    <button onclick="addProperty()">Upload Property</button>
-  </div>
-
-  <!-- FOOD SECTION -->
-  <h3>Add Food</h3>
-  <div class="section">
-    <input type="text" id="fTitle" placeholder="Food Title">
-    <textarea id="fShort" placeholder="Short Description"></textarea>
-    <textarea id="fLong" placeholder="Long Description"></textarea>
-    <label>Food Image:</label>
-    <input type="file" id="fImage">
-    <h4>Food Options (Variation)</h4>
-    <div id="variationList"></div>
-    <button onclick="addVariationField()">Add Price Option</button>
-    <button onclick="addFood()">Upload Food</button>
-  </div>
-
-  <!-- ITEMS SECTION -->
-  <h3>Add Item</h3>
-  <div class="section">
-    <input type="text" id="iTitle" placeholder="Item Title">
-    <input type="number" id="iPrice" placeholder="Price">
-    <select id="iCategory">
-      <option value="new">New</option>
-      <option value="used">Used</option>
-    </select>
-    <textarea id="iShort" placeholder="Short Description"></textarea>
-    <textarea id="iLong" placeholder="Long Description"></textarea>
-    <input type="file" id="iImages" multiple>
-    <button onclick="addItem()">Upload Item</button>
-  </div>
-
-</div>
 
 </body>
 </html>
