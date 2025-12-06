@@ -3,15 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
+
   <style>
     body { font-family: Arial; padding: 20px; }
     form { border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; }
     h2 { margin-top: 40px; }
-    
+
     #loader {
       display: none;
       position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background: rgba(0,0,0,0.6);
       color: #fff; font-size: 32px;
       display: flex; justify-content: center; align-items: center;
@@ -22,15 +24,14 @@
 <body>
 
 <h1>Admin: Add Products</h1>
-
 <div id="loader">Uploading... Please wait ⏳</div>
 
 
-<!-- PROPERTY -->
+<!-- ================= PROPERTY FORM ================= -->
 <h2>Add Property</h2>
 <form id="propertyForm">
   <label>4 Images:</label><br>
-  <input type="file" id="propertyImages" multiple accept="image/*" required><br><br>
+  <input type="file" id="propertyImages" accept="image/*" multiple required><br><br>
 
   <label>Title:</label><br>
   <input type="text" id="propertyTitle" required><br><br>
@@ -54,7 +55,8 @@
 </form>
 
 
-<!-- FOOD -->
+
+<!-- ================= FOOD FORM ================= -->
 <h2>Add Food</h2>
 <form id="foodForm">
   <label>Image:</label><br>
@@ -71,18 +73,19 @@
 
   <h4>Price Options:</h4>
   <div id="variantList"></div>
-  <button type="button" onclick="addVariant()">+ Add Price Option</button>
+  <button type="button" onclick="addVariant()">+ Add Option</button>
   <br><br>
 
   <button type="submit">Submit Food</button>
 </form>
 
 
-<!-- ITEMS -->
+
+<!-- ================= ITEMS FORM ================= -->
 <h2>Add Item</h2>
 <form id="itemForm">
   <label>4 Images:</label><br>
-  <input type="file" id="itemImages" multiple accept="image/*" required><br><br>
+  <input type="file" id="itemImages" accept="image/*" multiple required><br><br>
 
   <label>Title:</label><br>
   <input type="text" id="itemTitle" required><br><br>
@@ -90,7 +93,7 @@
   <label>Price:</label><br>
   <input type="number" id="itemPrice" required><br><br>
 
-  <label>Category:</label><br>
+  <label>Condition:</label><br>
   <select id="itemCategory">
     <option value="new">New</option>
     <option value="used">Used</option>
@@ -106,7 +109,8 @@
 </form>
 
 
-<!-- SUPABASE SDK -->
+
+<!-- ================= SUPABASE SDK + SCRIPT ================= -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const { createClient } = supabase;
@@ -120,16 +124,20 @@ const loader = document.getElementById("loader");
 function showLoader() { loader.style.display = "flex"; }
 function hideLoader() { loader.style.display = "none"; }
 
+
+
+// ========== Upload Helper ==========
 async function uploadImages(folder, files) {
   let urls = [];
+
   for (let file of files) {
     const path = `${folder}/${Date.now()}-${file.name}`;
     let { error } = await db.storage.from("images").upload(path, file);
 
     if (error) {
+      console.error(error);
       alert("Upload failed!");
       hideLoader();
-      console.error(error);
       return null;
     }
 
@@ -140,16 +148,17 @@ async function uploadImages(folder, files) {
 }
 
 
-/* ADD PROPERTY */
-document.getElementById("propertyForm").addEventListener("submit", async(e)=>{
+
+// ================= INSERT PROPERTY =================
+document.getElementById("propertyForm").addEventListener("submit", async (e)=> {
   e.preventDefault();
   showLoader();
 
   const files = propertyImages.files;
-  if(files.length < 1) return alert("Upload at least 1 image");
+  if (files.length < 1) return alert("Upload at least 1 image");
 
   const urls = await uploadImages("properties", files);
-  if(!urls) return;
+  if (!urls) return;
 
   const { error } = await db.from("properties").insert({
     images: urls,
@@ -161,12 +170,13 @@ document.getElementById("propertyForm").addEventListener("submit", async(e)=>{
   });
 
   hideLoader();
-  if(error) return alert(error.message);
-  alert("Property Added Successfully! 🎉");
+  if (error) return alert(error.message);
+  alert("Property Added! 🎉");
 });
 
 
-/* FOOD VARIANTS */
+
+// ================= FOOD VARIANTS =================
 function addVariant() {
   const div = document.createElement("div");
   div.innerHTML = `
@@ -177,18 +187,22 @@ function addVariant() {
 }
 
 
-/* ADD FOOD */
-document.getElementById("foodForm").addEventListener("submit", async(e)=>{
+
+// ================= INSERT FOOD =================
+document.getElementById("foodForm").addEventListener("submit", async (e)=> {
   e.preventDefault();
   showLoader();
 
   const files = foodImage.files;
   const urls = await uploadImages("food", files);
-  if(!urls) return;
+  if (!urls) return;
 
   const titles = document.querySelectorAll(".variantTitle");
   const prices = document.querySelectorAll(".variantPrice");
-  let variants = [...titles].map((t,i)=>({title:t.value, price:Number(prices[i].value)}));
+  let variants = [...titles].map((t,i)=>({
+    title: t.value,
+    price: Number(prices[i].value)
+  }));
 
   const { error } = await db.from("food").insert({
     image: urls[0],
@@ -199,19 +213,20 @@ document.getElementById("foodForm").addEventListener("submit", async(e)=>{
   });
 
   hideLoader();
-  if(error) return alert(error.message);
-  alert("Food Added Successfully! 🎉");
+  if (error) return alert(error.message);
+  alert("Food Added! 🎉");
 });
 
 
-/* ADD ITEM */
-document.getElementById("itemForm").addEventListener("submit", async(e)=>{
+
+// ================= INSERT ITEM =================
+document.getElementById("itemForm").addEventListener("submit", async (e)=> {
   e.preventDefault();
   showLoader();
 
   const files = itemImages.files;
   const urls = await uploadImages("items", files);
-  if(!urls) return;
+  if (!urls) return;
 
   const { error } = await db.from("items").insert({
     images: urls,
@@ -223,8 +238,8 @@ document.getElementById("itemForm").addEventListener("submit", async(e)=>{
   });
 
   hideLoader();
-  if(error) return alert(error.message);
-  alert("Item Added Successfully! 🎉");
+  if (error) return alert(error.message);
+  alert("Item Added! 🎉");
 });
 </script>
 
