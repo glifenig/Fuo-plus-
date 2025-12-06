@@ -1,247 +1,706 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
-
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    form { border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; }
-    h2 { margin-top: 40px; }
-
-    #loader {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      color: #fff; font-size: 32px;
-      display: flex; justify-content: center; align-items: center;
-      z-index: 999;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FUO Plus — Admin Panel</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/1.1.0/modern-normalize.min.css" integrity="" crossorigin="anonymous" />
+<style>
+  :root { --accent:#0b84ff; --muted:#666; --card:#fff; --bg:#f5f7fb; }
+  body { font-family: Inter, Arial, sans-serif; background: var(--bg); margin:0; padding:20px; color:#111; }
+  .wrap { max-width:1200px; margin:0 auto; }
+  header { display:flex; gap:16px; align-items:center; justify-content:space-between; }
+  h1 { margin:0; font-size:20px; }
+  .row { display:flex; gap:20px; margin-top:18px; }
+  .col { background:var(--card); padding:16px; border-radius:10px; box-shadow:0 6px 18px rgba(20,20,40,0.04); }
+  .left { flex: 0 0 360px; }
+  .main { flex:1; }
+  label { display:block; font-size:13px; margin:8px 0 6px; color:var(--muted); }
+  input[type=text], input[type=number], textarea, select { width:100%; padding:10px; border-radius:8px; border:1px solid #e3e7ee; box-sizing:border-box; }
+  textarea { min-height:80px; resize:vertical; }
+  button { background:var(--accent); color:#fff; border:0; padding:10px 12px; border-radius:8px; cursor:pointer; margin-top:10px; }
+  button.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  .small { padding:6px 8px; font-size:13px; border-radius:6px; }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tabs button { background:#fff; color:#333; border:1px solid #eee; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+  .card { background:#fff; padding:12px; border-radius:10px; box-shadow:0 6px 18px rgba(20,20,40,0.04); }
+  .thumbs { display:flex; gap:6px; overflow:auto; }
+  .thumbs img { width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid #eee; }
+  .meta { font-size:13px; color:var(--muted); margin-bottom:6px; }
+  .actions { display:flex; gap:8px; margin-top:8px; }
+  .danger { background:#ff4d4f; }
+  .muted { color:var(--muted); font-size:13px; }
+  #loaderOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999; }
+  #loader { background:#fff; padding:18px 26px; border-radius:10px; display:flex; gap:12px; align-items:center; box-shadow:0 8px 30px rgba(0,0,0,0.12); font-weight:600; }
+  .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:9998; }
+  .modal .box { background:#fff; padding:18px; border-radius:10px; width:760px; max-width:95%; max-height:90%; overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
+  .row-gap { display:flex; gap:12px; flex-wrap:wrap; }
+  .label-inline { display:flex; gap:8px; align-items:center; }
+  .note { font-size:13px; color:var(--muted); margin-top:6px; }
+</style>
 </head>
 <body>
+  <div id="loaderOverlay"><div id="loader">Uploading... Please wait ⏳</div></div>
 
-<h1>Admin: Add Products</h1>
-<div id="loader">Uploading... Please wait ⏳</div>
+  <div class="wrap">
+    <header>
+      <h1>FUO Plus — Admin Panel</h1>
+      <div>
+        <span class="muted">Quick: admin pass is</span> <strong style="margin-left:8px">1234</strong>
+      </div>
+    </header>
 
+    <div class="row" style="margin-top:18px;">
+      <!-- LEFT: Login + Forms -->
+      <div class="col left">
+        <!-- LOGIN -->
+        <div id="loginBox">
+          <h3>Admin Login</h3>
+          <label>Password</label>
+          <input type="password" id="adminPassword" placeholder="Enter admin password (1234)">
+          <button id="btnLogin">Unlock Admin</button>
+        </div>
 
-<!-- ================= PROPERTY FORM ================= -->
-<h2>Add Property</h2>
-<form id="propertyForm">
-  <label>4 Images:</label><br>
-  <input type="file" id="propertyImages" accept="image/*" multiple required><br><br>
+        <!-- ADMIN UI -->
+        <div id="adminUI" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="margin:0">Create</h3>
+            <button class="ghost small" id="btnLogout">Logout</button>
+          </div>
 
-  <label>Title:</label><br>
-  <input type="text" id="propertyTitle" required><br><br>
+          <!-- PROPERTY FORM -->
+          <div style="margin-top:12px;">
+            <h4 style="margin-bottom:8px">Add Property</h4>
+            <label>Images (4 required)</label>
+            <input type="file" id="propImages" accept="image/*" multiple>
+            <label>Title</label><input id="propTitle" type="text" placeholder="Title">
+            <label>Price</label><input id="propPrice" type="number" placeholder="Price">
+            <label>Short Description</label><textarea id="propShort"></textarea>
+            <label>Long Description</label><textarea id="propLong"></textarea>
+            <label>Type</label>
+            <select id="propType">
+              <option value="sell">Sell</option>
+              <option value="rent">Rent</option>
+            </select>
+            <button id="btnAddProp">Upload Property</button>
+            <div class="note">Make sure to provide 4 images. Upload will fail otherwise.</div>
+          </div>
 
-  <label>Price:</label><br>
-  <input type="number" id="propertyPrice" required><br><br>
+          <hr style="margin:16px 0">
 
-  <label>Type:</label><br>
-  <select id="propertyType">
-    <option value="sell">Sell</option>
-    <option value="rent">Rent</option>
-  </select><br><br>
+          <!-- FOOD FORM -->
+          <div>
+            <h4 style="margin-bottom:8px">Add Food</h4>
+            <label>Image (1)</label><input type="file" id="foodImage" accept="image/*">
+            <label>Title</label><input id="foodTitle" type="text" placeholder="Food title">
+            <label>Short Description</label><textarea id="foodShort"></textarea>
+            <label>Long Description</label><textarea id="foodLong"></textarea>
+            <label>Price Options</label>
+            <div id="foodVariants"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button id="btnAddVariant" class="small ghost">+ Add option</button>
+              <button id="btnClearVariants" class="small">Clear options</button>
+            </div>
+            <button id="btnAddFood" style="margin-top:12px;">Upload Food</button>
+          </div>
 
-  <label>Short Description:</label><br>
-  <textarea id="propertyShort" required></textarea><br><br>
+          <hr style="margin:16px 0">
 
-  <label>Long Description:</label><br>
-  <textarea id="propertyLong"></textarea><br><br>
+          <!-- ITEM FORM -->
+          <div>
+            <h4 style="margin-bottom:8px">Add Item</h4>
+            <label>Images (4 required)</label><input type="file" id="itemImages" accept="image/*" multiple>
+            <label>Title</label><input id="itemTitle" type="text" placeholder="Item title">
+            <label>Price</label><input id="itemPrice" type="number" placeholder="Price">
+            <label>Short Description</label><textarea id="itemShort"></textarea>
+            <label>Long Description</label><textarea id="itemLong"></textarea>
+            <label>Condition</label>
+            <select id="itemCategory"><option value="new">New</option><option value="used">Used</option></select>
+            <button id="btnAddItem" style="margin-top:12px;">Upload Item</button>
+            <div class="note">Provide 4 images for the item.</div>
+          </div>
+        </div>
+      </div>
 
-  <button type="submit">Submit Property</button>
-</form>
+      <!-- MAIN: Dashboard -->
+      <div class="col main">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="tabs">
+            <button class="small" data-tab="properties" id="tabProperties">Properties</button>
+            <button class="small" data-tab="food" id="tabFood">Food</button>
+            <button class="small" data-tab="items" id="tabItems">Items</button>
+          </div>
+          <div><span class="muted">Admin Dashboard</span></div>
+        </div>
 
+        <div id="listArea" style="margin-top:12px;">
+          <!-- lists will be injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- EDIT MODAL -->
+  <div class="modal" id="editModal">
+    <div class="box">
+      <h3 id="editTitle">Edit</h3>
+      <div id="editContent"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button id="btnSaveEdit">Save</button>
+        <button id="btnCancelEdit" class="ghost">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-<!-- ================= FOOD FORM ================= -->
-<h2>Add Food</h2>
-<form id="foodForm">
-  <label>Image:</label><br>
-  <input type="file" id="foodImage" accept="image/*" required><br><br>
-
-  <label>Title:</label><br>
-  <input type="text" id="foodTitle" required><br><br>
-
-  <label>Short Description:</label><br>
-  <textarea id="foodShort" required></textarea><br><br>
-
-  <label>Long Description:</label><br>
-  <textarea id="foodLong"></textarea><br><br>
-
-  <h4>Price Options:</h4>
-  <div id="variantList"></div>
-  <button type="button" onclick="addVariant()">+ Add Option</button>
-  <br><br>
-
-  <button type="submit">Submit Food</button>
-</form>
-
-
-
-<!-- ================= ITEMS FORM ================= -->
-<h2>Add Item</h2>
-<form id="itemForm">
-  <label>4 Images:</label><br>
-  <input type="file" id="itemImages" accept="image/*" multiple required><br><br>
-
-  <label>Title:</label><br>
-  <input type="text" id="itemTitle" required><br><br>
-
-  <label>Price:</label><br>
-  <input type="number" id="itemPrice" required><br><br>
-
-  <label>Condition:</label><br>
-  <select id="itemCategory">
-    <option value="new">New</option>
-    <option value="used">Used</option>
-  </select><br><br>
-
-  <label>Short Description:</label><br>
-  <textarea id="itemShort" required></textarea><br><br>
-
-  <label>Long Description:</label><br>
-  <textarea id="itemLong"></textarea><br><br>
-
-  <button type="submit">Submit Item</button>
-</form>
-
-
-
-<!-- ================= SUPABASE SDK + SCRIPT ================= -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const { createClient } = supabase;
+/* ================== CONFIG ================== */
+const SUPABASE_URL = "https://nhopxxebahavtziafmnd.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ob3B4eGViYWhhdnR6aWFmbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5ODA4MTMsImV4cCI6MjA4MDU1NjgxM30.3okIjvZQNM56a8qIdMq8P677xXWJJLRo8cgEMMDqBh8";
 
-const db = createClient(
-  "https://nhopxxebahavtziafmnd.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ob3B4eGViYWhhdnR6aWFmbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5ODA4MTMsImV4cCI6MjA4MDU1NjgxM30.3okIjvZQNM56a8qIdMq8P677xXWJJLRo8cgEMMDqBh8"
-);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const loaderOverlay = document.getElementById('loaderOverlay');
+const editModal = document.getElementById('editModal');
+const editContent = document.getElementById('editContent');
+const editTitleEl = document.getElementById('editTitle');
 
-const loader = document.getElementById("loader");
-function showLoader() { loader.style.display = "flex"; }
-function hideLoader() { loader.style.display = "none"; }
+let currentTab = 'properties';
+let adminUnlocked = false;
 
+/* ---------------- loader helpers ---------------- */
+function showLoader(message = 'Uploading... Please wait ⏳') {
+  document.getElementById('loader').textContent = message;
+  loaderOverlay.style.display = 'flex';
+}
+function hideLoader() { loaderOverlay.style.display = 'none'; }
 
+/* ================== AUTH (Simple passcode) ================== */
+document.getElementById('btnLogin').addEventListener('click', () => {
+  const pass = document.getElementById('adminPassword').value;
+  if (pass === '1234') {
+    adminUnlocked = true;
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('adminUI').style.display = 'block';
+    loadCurrentTab();
+    alert('Admin unlocked');
+  } else {
+    alert('Wrong password');
+  }
+});
+document.getElementById('btnLogout').addEventListener('click', () => {
+  adminUnlocked = false;
+  document.getElementById('adminUI').style.display = 'none';
+  document.getElementById('loginBox').style.display = 'block';
+});
 
-// ========== Upload Helper ==========
-async function uploadImages(folder, files) {
-  let urls = [];
+/* ================== TAB SWITCHING ================== */
+document.getElementById('tabProperties').addEventListener('click', ()=> openTab('properties'));
+document.getElementById('tabFood').addEventListener('click', ()=> openTab('food'));
+document.getElementById('tabItems').addEventListener('click', ()=> openTab('items'));
+function openTab(tab) {
+  currentTab = tab;
+  loadCurrentTab();
+}
 
-  for (let file of files) {
-    const path = `${folder}/${Date.now()}-${file.name}`;
-    let { error } = await db.storage.from("images").upload(path, file);
-
-    if (error) {
-      console.error(error);
-      alert("Upload failed!");
-      hideLoader();
-      return null;
-    }
-
-    const { data } = db.storage.from("images").getPublicUrl(path);
+/* ================== UTIL: upload multiple images to bucket ==================
+   - bucketName should be one of 'properties', 'food', 'items'
+   - files is FileList or array of File
+   returns array of publicUrl strings or throws
+*/
+async function uploadFilesToBucket(bucketName, files) {
+  if (!files || files.length === 0) return [];
+  const urls = [];
+  for (let file of Array.from(files)) {
+    const path = `${bucketName}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name}`;
+    const { error: upErr } = await supabase.storage.from(bucketName).upload(path, file);
+    if (upErr) throw upErr;
+    const { data } = supabase.storage.from(bucketName).getPublicUrl(path);
     urls.push(data.publicUrl);
   }
   return urls;
 }
 
+/* ================== CREATE: ADD PROPERTY ================== */
+document.getElementById('btnAddProp').addEventListener('click', async () => {
+  if (!adminUnlocked) return alert('Unlock admin first');
+  const files = document.getElementById('propImages').files;
+  if (!files || files.length < 4) return alert('Please select 4 images for property (at least).');
 
+  const title = document.getElementById('propTitle').value.trim();
+  const price = Number(document.getElementById('propPrice').value);
+  const short_desc = document.getElementById('propShort').value.trim();
+  const long_desc = document.getElementById('propLong').value.trim();
+  const type = document.getElementById('propType').value;
 
-// ================= INSERT PROPERTY =================
-document.getElementById("propertyForm").addEventListener("submit", async (e)=> {
-  e.preventDefault();
-  showLoader();
+  if (!title || !price || !short_desc) return alert('Please fill Title, Price and Short description');
 
-  const files = propertyImages.files;
-  if (files.length < 1) return alert("Upload at least 1 image");
-
-  const urls = await uploadImages("properties", files);
-  if (!urls) return;
-
-  const { error } = await db.from("properties").insert({
-    images: urls,
-    title: propertyTitle.value,
-    price: Number(propertyPrice.value),
-    type: propertyType.value,
-    short_desc: propertyShort.value,
-    long_desc: propertyLong.value
-  });
-
-  hideLoader();
-  if (error) return alert(error.message);
-  alert("Property Added! 🎉");
+  try {
+    showLoader('Uploading property images...');
+    const urls = await uploadFilesToBucket('properties', files);
+    showLoader('Inserting property into database...');
+    const { error } = await supabase.from('properties').insert({
+      images: urls,
+      title, price, short_desc, long_desc, type
+    });
+    hideLoader();
+    if (error) throw error;
+    alert('Property added ✅');
+    document.getElementById('propImages').value = '';
+    document.getElementById('propTitle').value = '';
+    document.getElementById('propPrice').value = '';
+    document.getElementById('propShort').value = '';
+    document.getElementById('propLong').value = '';
+    loadCurrentTab();
+  } catch (err) {
+    hideLoader();
+    console.error(err);
+    alert('Error: ' + (err.message || JSON.stringify(err)));
+  }
 });
 
-
-
-// ================= FOOD VARIANTS =================
-function addVariant() {
-  const div = document.createElement("div");
-  div.innerHTML = `
-    <input class="variantTitle" placeholder="Size" required>
-    <input class="variantPrice" type="number" placeholder="Price" required><br><br>
+/* ================== CREATE: ADD FOOD (with dynamic variants) ================== */
+document.getElementById('btnAddVariant').addEventListener('click', (ev) => {
+  ev.preventDefault();
+  const wrapper = document.createElement('div');
+  wrapper.style.display = 'flex';
+  wrapper.style.gap = '8px';
+  wrapper.style.marginBottom = '8px';
+  wrapper.innerHTML = `
+    <input placeholder="Option label (e.g Small)" class="fv-label" style="flex:1;padding:8px" />
+    <input type="number" placeholder="Price" class="fv-price" style="width:120px;padding:8px" />
+    <button class="ghost small btnRemoveVariant">Remove</button>
   `;
-  variantList.appendChild(div);
+  wrapper.querySelector('.btnRemoveVariant').addEventListener('click', ()=> wrapper.remove());
+  document.getElementById('foodVariants').appendChild(wrapper);
+});
+document.getElementById('btnClearVariants').addEventListener('click', ()=> { document.getElementById('foodVariants').innerHTML = ''; });
+
+document.getElementById('btnAddFood').addEventListener('click', async () => {
+  if (!adminUnlocked) return alert('Unlock admin first');
+  const file = document.getElementById('foodImage').files[0];
+  if (!file) return alert('Please choose an image for the food');
+
+  const title = document.getElementById('foodTitle').value.trim();
+  const short_desc = document.getElementById('foodShort').value.trim();
+  const long_desc = document.getElementById('foodLong').value.trim();
+  if (!title || !short_desc) return alert('Title and short description are required');
+
+  const labels = Array.from(document.querySelectorAll('.fv-label')).map(el => el.value.trim()).filter(Boolean);
+  const prices = Array.from(document.querySelectorAll('.fv-price')).map(el => el.value).filter(Boolean);
+  if (labels.length === 0 || labels.length !== prices.length) return alert('Add at least one price option and ensure labels & prices match.');
+
+  try {
+    showLoader('Uploading food image...');
+    const urls = await uploadFilesToBucket('food', [file]);
+    showLoader('Inserting food into database...');
+    const variations = labels.map((lab,i)=>({ text:lab, price: Number(prices[i]) }));
+    const { error } = await supabase.from('food').insert({
+      image: urls[0],
+      title, short_desc, long_desc, variations
+    });
+    hideLoader();
+    if (error) throw error;
+    alert('Food added ✅');
+    document.getElementById('foodImage').value = '';
+    document.getElementById('foodTitle').value = '';
+    document.getElementById('foodShort').value = '';
+    document.getElementById('foodLong').value = '';
+    document.getElementById('foodVariants').innerHTML = '';
+    loadCurrentTab();
+  } catch (err) {
+    hideLoader();
+    console.error(err);
+    alert('Error: ' + (err.message || JSON.stringify(err)));
+  }
+});
+
+/* ================== CREATE: ADD ITEM ================== */
+document.getElementById('btnAddItem').addEventListener('click', async () => {
+  if (!adminUnlocked) return alert('Unlock admin first');
+  const files = document.getElementById('itemImages').files;
+  if (!files || files.length < 4) return alert('Please provide 4 images for item (at least).');
+
+  const title = document.getElementById('itemTitle').value.trim();
+  const price = Number(document.getElementById('itemPrice').value);
+  const short_desc = document.getElementById('itemShort').value.trim();
+  const long_desc = document.getElementById('itemLong').value.trim();
+  const category = document.getElementById('itemCategory').value;
+
+  if (!title || !price || !short_desc) return alert('Please fill Title, Price and Short description');
+
+  try {
+    showLoader('Uploading item images...');
+    const urls = await uploadFilesToBucket('items', files);
+    showLoader('Inserting item into database...');
+    const { error } = await supabase.from('items').insert({
+      images: urls, title, price, category, short_desc, long_desc
+    });
+    hideLoader();
+    if (error) throw error;
+    alert('Item added ✅');
+    document.getElementById('itemImages').value = '';
+    document.getElementById('itemTitle').value = '';
+    document.getElementById('itemPrice').value = '';
+    document.getElementById('itemShort').value = '';
+    document.getElementById('itemLong').value = '';
+    loadCurrentTab();
+  } catch (err) {
+    hideLoader();
+    console.error(err);
+    alert('Error: ' + (err.message || JSON.stringify(err)));
+  }
+});
+
+/* ================== DASHBOARD: LOAD & RENDER ================== */
+async function loadCurrentTab() {
+  if (!adminUnlocked) return;
+  if (currentTab === 'properties') {
+    await loadProperties();
+  } else if (currentTab === 'food') {
+    await loadFood();
+  } else if (currentTab === 'items') {
+    await loadItems();
+  }
+}
+
+/* ----- PROPERTIES ----- */
+async function loadProperties() {
+  document.getElementById('listArea').innerHTML = '<div class="muted">Loading properties...</div>';
+  const { data, error } = await supabase.from('properties').select('*').order('created_at', { ascending: false });
+  if (error) { document.getElementById('listArea').innerHTML = `<div class="muted">Error loading: ${error.message}</div>`; return; }
+  renderProperties(data || []);
+}
+function renderProperties(rows) {
+  if (!rows.length) { document.getElementById('listArea').innerHTML = '<div class="muted">No properties yet</div>'; return; }
+  const container = document.createElement('div');
+  container.className = 'grid';
+  rows.forEach(r => {
+    const card = document.createElement('div'); card.className = 'card';
+    const imgs = Array.isArray(r.images) ? r.images : (r.images ? [r.images] : []);
+    const thumbs = imgs.slice(0,4).map(u=>`<img src="${u}" alt="" />`).join('');
+    card.innerHTML = `
+      <div class="thumbs">${thumbs}</div>
+      <div style="margin-top:8px;"><strong>${escapeHtml(r.title || r.name || 'Untitled')}</strong></div>
+      <div class="meta">₦${r.price ?? 'N/A'} • ${r.type ?? ''} • ${new Date(r.created_at).toLocaleString()}</div>
+      <div class="muted">${truncate( r.short_desc || '' , 120)}</div>
+      <div class="actions">
+        <button class="small" data-id="${r.id}" data-type="prop-edit">Edit</button>
+        <button class="small danger" data-id="${r.id}" data-type="prop-delete">Delete</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  const area = document.getElementById('listArea'); area.innerHTML=''; area.appendChild(container);
+  // wire buttons
+  area.querySelectorAll('button[data-type="prop-delete"]').forEach(b=>b.addEventListener('click', onDeleteProperty));
+  area.querySelectorAll('button[data-type="prop-edit"]').forEach(b=>b.addEventListener('click', onEditProperty));
 }
 
 
-
-// ================= INSERT FOOD =================
-document.getElementById("foodForm").addEventListener("submit", async (e)=> {
-  e.preventDefault();
-  showLoader();
-
-  const files = foodImage.files;
-  const urls = await uploadImages("food", files);
-  if (!urls) return;
-
-  const titles = document.querySelectorAll(".variantTitle");
-  const prices = document.querySelectorAll(".variantPrice");
-  let variants = [...titles].map((t,i)=>({
-    title: t.value,
-    price: Number(prices[i].value)
-  }));
-
-  const { error } = await db.from("food").insert({
-    image: urls[0],
-    title: foodTitle.value,
-    short_desc: foodShort.value,
-    long_desc: foodLong.value,
-    variations: variants
+/* ----- FOOD ----- */
+async function loadFood() {
+  document.getElementById('listArea').innerHTML = '<div class="muted">Loading food...</div>';
+  const { data, error } = await supabase.from('food').select('*').order('created_at', { ascending:false });
+  if (error) { document.getElementById('listArea').innerHTML = `<div class="muted">Error: ${error.message}</div>`; return; }
+  renderFood(data || []);
+}
+function renderFood(rows) {
+  if (!rows.length) { document.getElementById('listArea').innerHTML = '<div class="muted">No food yet</div>'; return; }
+  const container = document.createElement('div'); container.className='grid';
+  rows.forEach(r=>{
+    const img = r.image ? `<img src="${r.image}" style="width:100%;height:160px;object-fit:cover;border-radius:8px;margin-bottom:8px;" />` : '';
+    const varHtml = Array.isArray(r.variations) ? r.variations.map(v=>`<div class="muted">${escapeHtml(v.text)} — ₦${v.price}</div>`).join('') : '';
+    const card = document.createElement('div'); card.className='card';
+    card.innerHTML = `
+      ${img}
+      <div><strong>${escapeHtml(r.title)}</strong></div>
+      <div class="meta">${new Date(r.created_at).toLocaleString()}</div>
+      <div class="muted">${truncate(r.short_desc||'',120)}</div>
+      <div style="margin-top:8px">${varHtml}</div>
+      <div class="actions">
+        <button class="small" data-id="${r.id}" data-type="food-edit">Edit</button>
+        <button class="small danger" data-id="${r.id}" data-type="food-delete">Delete</button>
+      </div>
+    `;
+    container.appendChild(card);
   });
+  const area = document.getElementById('listArea'); area.innerHTML=''; area.appendChild(container);
+  area.querySelectorAll('button[data-type="food-delete"]').forEach(b=>b.addEventListener('click', onDeleteFood));
+  area.querySelectorAll('button[data-type="food-edit"]').forEach(b=>b.addEventListener('click', onEditFood));
+}
 
-  hideLoader();
-  if (error) return alert(error.message);
-  alert("Food Added! 🎉");
+/* ----- ITEMS ----- */
+async function loadItems() {
+  document.getElementById('listArea').innerHTML = '<div class="muted">Loading items...</div>';
+  const { data, error } = await supabase.from('items').select('*').order('created_at', { ascending:false });
+  if (error) { document.getElementById('listArea').innerHTML = `<div class="muted">Error: ${error.message}</div>`; return; }
+  renderItems(data || []);
+}
+function renderItems(rows) {
+  if (!rows.length) { document.getElementById('listArea').innerHTML = '<div class="muted">No items yet</div>'; return; }
+  const container = document.createElement('div'); container.className='grid';
+  rows.forEach(r=>{
+    const imgs = Array.isArray(r.images) ? r.images : (r.images ? [r.images] : []);
+    const thumbs = imgs.slice(0,4).map(u=>`<img src="${u}" alt="" />`).join('');
+    const card = document.createElement('div'); card.className='card';
+    card.innerHTML = `
+      <div class="thumbs">${thumbs}</div>
+      <div style="margin-top:8px;"><strong>${escapeHtml(r.title)}</strong></div>
+      <div class="meta">₦${r.price ?? 'N/A'} • ${r.category ?? ''} • ${new Date(r.created_at).toLocaleString()}</div>
+      <div class="muted">${truncate(r.short_desc||'',120)}</div>
+      <div class="actions">
+        <button class="small" data-id="${r.id}" data-type="item-edit">Edit</button>
+        <button class="small danger" data-id="${r.id}" data-type="item-delete">Delete</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  const area = document.getElementById('listArea'); area.innerHTML=''; area.appendChild(container);
+  area.querySelectorAll('button[data-type="item-delete"]').forEach(b=>b.addEventListener('click', onDeleteItem));
+  area.querySelectorAll('button[data-type="item-edit"]').forEach(b=>b.addEventListener('click', onEditItem));
+}
+
+/* ================== HELPERS: escape/truncate ================== */
+function escapeHtml(s){ if(!s) return ''; return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+function truncate(s, n){ if(!s) return ''; return s.length > n ? s.slice(0,n-1)+'…' : s; }
+
+/* ================== DELETE HANDLERS ================== */
+async function onDeleteProperty(ev) {
+  const id = ev.target.dataset.id;
+  if (!confirm('Delete this property?')) return;
+  try {
+    showLoader('Deleting property...');
+    const { error } = await supabase.from('properties').delete().eq('id', id);
+    hideLoader();
+    if (error) throw error;
+    alert('Deleted');
+    loadCurrentTab();
+  } catch (err) { hideLoader(); console.error(err); alert('Error: '+err.message); }
+}
+async function onDeleteFood(ev) {
+  const id = ev.target.dataset.id;
+  if (!confirm('Delete this food item?')) return;
+  try {
+    showLoader('Deleting food...');
+    const { error } = await supabase.from('food').delete().eq('id', id);
+    hideLoader();
+    if (error) throw error;
+    alert('Deleted');
+    loadCurrentTab();
+  } catch (err) { hideLoader(); console.error(err); alert('Error: '+err.message); }
+}
+async function onDeleteItem(ev) {
+  const id = ev.target.dataset.id;
+  if (!confirm('Delete this item?')) return;
+  try {
+    showLoader('Deleting item...');
+    const { error } = await supabase.from('items').delete().eq('id', id);
+    hideLoader();
+    if (error) throw error;
+    alert('Deleted');
+    loadCurrentTab();
+  } catch (err) { hideLoader(); console.error(err); alert('Error: '+err.message); }
+}
+
+/* ================== EDIT: Open Modals & Save ================== */
+/* PROPERTY EDIT */
+async function onEditProperty(ev) {
+  const id = ev.target.dataset.id;
+  const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
+  if (error || !data) return alert('Error loading property: ' + (error?.message||''));
+  openEditModal('Edit Property', renderPropertyEditForm(data), async () => {
+    // Save handler
+    const newTitle = document.getElementById('edit_propTitle').value.trim();
+    const newPrice = Number(document.getElementById('edit_propPrice').value);
+    const newShort = document.getElementById('edit_propShort').value.trim();
+    const newLong = document.getElementById('edit_propLong').value.trim();
+    const newType = document.getElementById('edit_propType').value;
+    const newFiles = document.getElementById('edit_propImages').files;
+
+    try {
+      showLoader('Saving property...');
+      let finalImages = data.images || [];
+      if (newFiles && newFiles.length > 0) {
+        // replace images only if user provided new ones
+        finalImages = await uploadFilesToBucket('properties', newFiles);
+      }
+      const { error: up } = await supabase.from('properties').update({
+        title: newTitle, price: newPrice, short_desc: newShort, long_desc: newLong, type: newType, images: finalImages
+      }).eq('id', id);
+      hideLoader();
+      if (up) throw up;
+      alert('Property updated');
+      closeEditModal();
+      loadCurrentTab();
+    } catch (err) { hideLoader(); console.error(err); alert('Error: '+err.message); }
+  });
+}
+
+/* FOOD EDIT */
+async function onEditFood(ev) {
+  const id = ev.target.dataset.id;
+  const { data, error } = await supabase.from('food').select('*').eq('id', id).single();
+  if (error || !data) return alert('Error loading food: ' + (error?.message||''));
+  openEditModal('Edit Food', renderFoodEditForm(data), async () => {
+    const newTitle = document.getElementById('edit_foodTitle').value.trim();
+    const newShort = document.getElementById('edit_foodShort').value.trim();
+    const newLong = document.getElementById('edit_foodLong').value.trim();
+    const newFiles = document.getElementById('edit_foodImage').files;
+    // gather variants
+    const labels = Array.from(document.querySelectorAll('.edit-fv-label')).map(e=>e.value.trim()).filter(Boolean);
+    const prices = Array.from(document.querySelectorAll('.edit-fv-price')).map(e=>Number(e.value)).filter(v=>!Number.isNaN(v));
+    if (labels.length === 0 || labels.length !== prices.length) return alert('Variants invalid');
+
+    try {
+      showLoader('Saving food...');
+      let imageUrl = data.image;
+      if (newFiles && newFiles.length > 0) {
+        const urls = await uploadFilesToBucket('food', [newFiles[0]]);
+        imageUrl = urls[0];
+      }
+      const variations = labels.map((t,i)=>({ text:t, price: prices[i] }));
+      const { error: up } = await supabase.from('food').update({
+        title: newTitle, short_desc: newShort, long_desc: newLong, image: imageUrl, variations
+      }).eq('id', id);
+      hideLoader();
+      if (up) throw up;
+      alert('Food updated');
+      closeEditModal();
+      loadCurrentTab();
+    } catch (err) { hideLoader(); console.error(err); alert('Error: '+err.message); }
+  });
+}
+
+/* ITEM EDIT */
+async function onEditItem(ev) {
+  const id = ev.target.dataset.id;
+  const { data, error } = await supabase.from('items').select('*').eq('id', id).single();
+  if (error || !data) return alert('Error loading item: ' + (error?.message||''));
+  openEditModal('Edit Item', renderItemEditForm(data), async () => {
+    const newTitle = document.getElementById('edit_itemTitle').value.trim();
+    const newPrice = Number(document.getElementById('edit_itemPrice').value);
+    const newShort = document.getElementById('edit_itemShort').value.trim();
+    const newLong = document.getElementById('edit_itemLong').value.trim();
+    const newCategory = document.getElementById('edit_itemCategory').value;
+    const newFiles = document.getElementById('edit_itemImages').files;
+
+    try {
+      showLoader('Saving item...');
+      let finalImgs = data.images || [];
+      if (newFiles && newFiles.length > 0) {
+        finalImgs = await uploadFilesToBucket('items', newFiles);
+      }
+      const { error: up } = await supabase.from('items').update({
+        title: newTitle, price: newPrice, short_desc: newShort, long_desc: newLong, category: newCategory, images: finalImgs
+      }).eq('id', id);
+      hideLoader();
+      if (up) throw up;
+      alert('Item updated');
+      closeEditModal();
+      loadCurrentTab();
+    } catch (err) { hideLoader(); console.error(err); alert('Error: '+err.message); }
+  });
+}
+
+/* ================== EDIT MODAL UTILITIES ================== */
+function openEditModal(title, contentHtml, onSave) {
+  editTitleEl.textContent = title;
+  editContent.innerHTML = '';
+  if (typeof contentHtml === 'string') editContent.innerHTML = contentHtml;
+  else editContent.appendChild(contentHtml);
+  editModal.style.display = 'flex';
+  document.getElementById('btnSaveEdit').onclick = async () => {
+    await onSave();
+  };
+  document.getElementById('btnCancelEdit').onclick = closeEditModal;
+}
+function closeEditModal() { editModal.style.display = 'none'; editContent.innerHTML = ''; }
+
+/* Render forms for editing */
+function renderPropertyEditForm(data) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <label>Replace images (optional, provide up to 4)</label>
+    <input type="file" id="edit_propImages" accept="image/*" multiple />
+    <label>Title</label><input id="edit_propTitle" value="${escapeHtml(data.title||'')}" />
+    <label>Price</label><input id="edit_propPrice" type="number" value="${data.price||''}" />
+    <label>Short Description</label><textarea id="edit_propShort">${escapeHtml(data.short_desc||'')}</textarea>
+    <label>Long Description</label><textarea id="edit_propLong">${escapeHtml(data.long_desc||'')}</textarea>
+    <label>Type</label>
+    <select id="edit_propType">
+      <option value="sell" ${data.type==='sell'?'selected':''}>Sell</option>
+      <option value="rent" ${data.type==='rent'?'selected':''}>Rent</option>
+    </select>
+    <div style="margin-top:8px;"><strong>Current Images</strong><div class="thumbs" id="edit_prop_current_images"></div></div>
+  `;
+  const thumbs = wrap.querySelector('#edit_prop_current_images');
+  (data.images||[]).slice(0,4).forEach(u=>{
+    const img = document.createElement('img'); img.src = u; thumbs.appendChild(img);
+  });
+  return wrap;
+}
+
+function renderFoodEditForm(data) {
+  const container = document.createElement('div');
+  container.innerHTML = `
+    <label>Replace image (optional)</label><input id="edit_foodImage" type="file" accept="image/*" />
+    <label>Title</label><input id="edit_foodTitle" value="${escapeHtml(data.title||'')}" />
+    <label>Short Description</label><textarea id="edit_foodShort">${escapeHtml(data.short_desc||'')}</textarea>
+    <label>Long Description</label><textarea id="edit_foodLong">${escapeHtml(data.long_desc||'')}</textarea>
+    <div style="margin-top:10px;"><strong>Variants</strong></div>
+    <div id="edit_foodVariants"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button id="editAddVariant" class="small ghost">+ Add Variant</button>
+      <button id="editClearVariants" class="small">Clear</button>
+    </div>
+    <div style="margin-top:8px;"><strong>Current Image</strong><div style="margin-top:6px"><img src="${escapeHtml(data.image||'')}" style="width:160px;height:100px;object-fit:cover;border-radius:8px" /></div></div>
+  `;
+  const variantsEl = container.querySelector('#edit_foodVariants');
+  (data.variations||[]).forEach(v=>{
+    const row = document.createElement('div');
+    row.style.display='flex'; row.style.gap='8px'; row.style.marginBottom='8px';
+    row.innerHTML = `<input class="edit-fv-label" value="${escapeHtml(v.text)}" style="flex:1;padding:8px" /><input class="edit-fv-price" value="${v.price}" style="width:120px;padding:8px" /><button class="ghost small">Remove</button>`;
+    row.querySelector('button').addEventListener('click', ()=>row.remove());
+    variantsEl.appendChild(row);
+  });
+  container.querySelector('#editAddVariant').addEventListener('click', (e)=>{ e.preventDefault(); const row = document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.marginBottom='8px'; row.innerHTML = `<input class="edit-fv-label" placeholder="Label" style="flex:1;padding:8px" /><input class="edit-fv-price" placeholder="Price" style="width:120px;padding:8px" /><button class="ghost small">Remove</button>`; row.querySelector('button').addEventListener('click', ()=>row.remove()); variantsEl.appendChild(row); });
+  container.querySelector('#editClearVariants').addEventListener('click', ()=>variantsEl.innerHTML='');
+  return container;
+}
+
+function renderItemEditForm(data) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <label>Replace images (optional)</label><input id="edit_itemImages" type="file" accept="image/*" multiple />
+    <label>Title</label><input id="edit_itemTitle" value="${escapeHtml(data.title||'')}" />
+    <label>Price</label><input id="edit_itemPrice" type="number" value="${data.price||''}" />
+    <label>Short Description</label><textarea id="edit_itemShort">${escapeHtml(data.short_desc||'')}</textarea>
+    <label>Long Description</label><textarea id="edit_itemLong">${escapeHtml(data.long_desc||'')}</textarea>
+    <label>Condition</label>
+    <select id="edit_itemCategory"><option value="new" ${data.category==='new'?'selected':''}>New</option><option value="used" ${data.category==='used'?'selected':''}>Used</option></select>
+    <div style="margin-top:8px;"><strong>Current Images</strong><div class="thumbs" id="edit_item_current_images"></div></div>
+  `;
+  const thumbs = wrap.querySelector('#edit_item_current_images');
+  (data.images||[]).slice(0,4).forEach(u=>{
+    const img = document.createElement('img'); img.src = u; thumbs.appendChild(img);
+  });
+  return wrap;
+}
+
+/* ================== ON LOAD: default tab (do not show data until admin unlocks) ================== */
+hideLoader();
+document.addEventListener('DOMContentLoaded', ()=> {
+  // nothing until admin unlocks
 });
 
+/* ================== UTILS & NOTES ================== */
+/* Make sure RLS policies in Supabase permit anon or service actions for these tables.
+   If you see "row-level security" errors: create policies to allow anon inserts/selects/deletes
+   OR use protected service key on server side. For now this UI uses the anon key.
+*/
 
-
-// ================= INSERT ITEM =================
-document.getElementById("itemForm").addEventListener("submit", async (e)=> {
-  e.preventDefault();
-  showLoader();
-
-  const files = itemImages.files;
-  const urls = await uploadImages("items", files);
-  if (!urls) return;
-
-  const { error } = await db.from("items").insert({
-    images: urls,
-    title: itemTitle.value,
-    price: Number(itemPrice.value),
-    category: itemCategory.value,
-    short_desc: itemShort.value,
-    long_desc: itemLong.value
-  });
-
-  hideLoader();
-  if (error) return alert(error.message);
-  alert("Item Added! 🎉");
-});
+/* ================== END ================== */
 </script>
-
 </body>
 </html>
