@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://ithiomhjbakdqhpqdnus.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0aGlvbWhqYmFrZHFocHFkbnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyODU2MDEsImV4cCI6MjA4MDg2MTYwMX0.H2cIypWgF5D6swr0WVKQ99GZE5WzBQ3C-hcHqN6x5LM";
+const supabaseUrl = "https://nhopxxebahavtziafmnd.supabase.co";
+const supabaseKey = "YOUR_ANON_KEY";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 const grid = document.getElementById("productGrid");
