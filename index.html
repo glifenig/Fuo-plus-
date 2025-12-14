@@ -1,69 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>FUO Plus | Home</title>
+const supabase = window.supabase.createClient(
+  "https://nhopxxebahavtziafmnd.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0aGlvbWhqYmFrZHFocHFkbnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyODU2MDEsImV4cCI6MjA4MDg2MTYwMX0.H2cIypWgF5D6swr0WVKQ99GZE5WzBQ3C-hcHqN6x5LM"
+);
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+const foodDiv = document.getElementById("food");
+const propDiv = document.getElementById("properties");
+const itemsDiv = document.getElementById("items");
+const searchInput = document.getElementById("searchInput");
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f8f9fa;
-    }
+let allProducts = [];
 
-    h2 {
-      margin-bottom: 10px;
-    }
+/* ---------- HELPERS ---------- */
+function card(title, desc, img) {
+  return `
+    <div class="card">
+      <img src="${img || 'https://via.placeholder.com/300'}">
+      <h4>${title}</h4>
+      <p>${desc || ''}</p>
+    </div>
+  `;
+}
 
-    #searchInput {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 20px;
-      font-size: 16px;
-    }
+/* ---------- LOAD DATA ---------- */
+async function loadHome() {
+  const foodRes = await supabase
+    .from("food")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(5);
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 15px;
-    }
+  const propRes = await supabase
+    .from("properties")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(5);
 
-    .card {
-      background: #fff;
-      border-radius: 6px;
-      padding: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+  const itemsRes = await supabase
+    .from("items")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(5);
 
-    .card img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      border-radius: 4px;
-    }
+  const food = foodRes.data || [];
+  const properties = propRes.data || [];
+  const items = itemsRes.data || [];
 
-    .type {
-      font-size: 12px;
-      color: #777;
-      margin-top: 4px;
-    }
-  </style>
-</head>
+  // Store for global search
+  allProducts = [
+    ...food.map(f => ({ ...f, type: "food" })),
+    ...properties.map(p => ({ ...p, type: "property" })),
+    ...items.map(i => ({ ...i, type: "item" }))
+  ];
 
-<body>
+  /* ---------- RENDER ---------- */
+  foodDiv.innerHTML = food.length
+    ? food.map(f => card(f.title, f.short_desc, f.image)).join("")
+    : "<p>No food yet</p>";
 
-  <h2>FUO Plus</h2>
+  propDiv.innerHTML = properties.length
+    ? properties.map(p =>
+        card(p.title, p.short_desc, p.images?.[0])
+      ).join("")
+    : "<p>No properties yet</p>";
 
-  <input
-    id="searchInput"
-    type="text"
-    placeholder="Search food, properties, items..."
-  />
+  itemsDiv.innerHTML = items.length
+    ? items.map(i =>
+        card(i.title, i.short_desc, i.images?.[0])
+      ).join("")
+    : "<p>No items yet</p>";
+}
 
-  <div id="products" class="grid"></div>
+/* ---------- SEARCH ---------- */
+searchInput.addEventListener("input", e => {
+  const q = e.target.value.toLowerCase();
+  if (!q) return loadHome();
 
-  <script src="home.js"></script>
-</body>
-</html>
+  const filtered = allProducts.filter(p =>
+    p.title?.toLowerCase().includes(q) ||
+    p.short_desc?.toLowerCase().includes(q)
+  );
+
+  foodDiv.innerHTML = "";
+  propDiv.innerHTML = "";
+  itemsDiv.innerHTML = "";
+
+  filtered.forEach(p => {
+    const html = card(
+      p.title,
+      p.short_desc,
+      p.image || p.images?.[0]
+    );
+
+    if (p.type === "food") foodDiv.innerHTML += html;
+    if (p.type === "property") propDiv.innerHTML += html;
+    if (p.type === "item") itemsDiv.innerHTML += html;
+  });
+});
+
+loadHome();
