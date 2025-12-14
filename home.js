@@ -11,21 +11,35 @@ let allProducts = [];
    LOAD LATEST PRODUCTS
 ============================= */
 async function loadLatestProducts() {
-  const [properties, food, items] = await Promise.all([
-    supabase.from("properties").select("*").order("created_at", { ascending: false }).limit(5),
-    supabase.from("food").select("*").order("created_at", { ascending: false }).limit(5),
-    supabase.from("items").select("*").order("created_at", { ascending: false }).limit(5)
-  ]);
+  try {
+    const [{ data: properties }, { data: food }, { data: items }] =
+      await Promise.all([
+        supabase.from("properties").select("*").order("created_at", { ascending: false }).limit(5),
+        supabase.from("food").select("*").order("created_at", { ascending: false }).limit(5),
+        supabase.from("items").select("*").order("created_at", { ascending: false }).limit(5)
+      ]);
 
-  allProducts = [
-    ...properties.data.map(p => ({ ...p, type: "property" })),
-    ...food.data.map(f => ({ ...f, type: "food" })),
-    ...items.data.map(i => ({ ...i, type: "item" }))
-  ];
+    // ✅ SAFETY: default to empty arrays
+    const safeProperties = properties || [];
+    const safeFood = food || [];
+    const safeItems = items || [];
 
-  allProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    allProducts = [
+      ...safeProperties.map(p => ({ ...p, type: "property" })),
+      ...safeFood.map(f => ({ ...f, type: "food" })),
+      ...safeItems.map(i => ({ ...i, type: "item" }))
+    ];
 
-  renderProducts(allProducts.slice(0, 5));
+    allProducts.sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+
+    renderProducts(allProducts.slice(0, 5));
+
+  } catch (err) {
+    console.error("Failed to load products:", err);
+    grid.innerHTML = "<p>Failed to load products</p>";
+  }
 }
 
 /* =============================
@@ -35,18 +49,19 @@ function renderProducts(products) {
   grid.innerHTML = "";
 
   if (!products.length) {
-    grid.innerHTML = "<p>No products found</p>";
+    grid.innerHTML = "<p>No products yet</p>";
     return;
   }
 
   products.forEach(p => {
-    const image =
-      Array.isArray(p.images) ? p.images[0] : p.image;
+    const image = Array.isArray(p.images)
+      ? p.images[0]
+      : p.image;
 
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <img src="${image}">
+      <img src="${image || 'https://via.placeholder.com/300'}">
       <div class="card-body">
         <h4>${p.title}</h4>
         <p>${p.type.toUpperCase()}</p>
@@ -68,7 +83,7 @@ searchInput.addEventListener("input", () => {
   const q = searchInput.value.toLowerCase();
 
   const filtered = allProducts.filter(p =>
-    p.title.toLowerCase().includes(q) ||
+    p.title?.toLowerCase().includes(q) ||
     p.short_description?.toLowerCase().includes(q)
   );
 
