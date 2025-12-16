@@ -10,63 +10,52 @@ const searchInput = document.getElementById("searchInput");
 
 let allProducts = [];
 
-/* ---------- HELPERS ---------- */
-function card(title, desc, img) {
+/* ---------- CARD ---------- */
+function card(product, type) {
+  const img =
+    product.image ||
+    product.images?.[0] ||
+    "https://via.placeholder.com/300";
+
   return `
-    <div class="card">
-      <img src="${img || 'https://via.placeholder.com/300'}">
-      <h4>${title}</h4>
-      <p>${desc || ''}</p>
-    </div>
+    <a href="product.html?type=${type}&id=${product.id}" style="text-decoration:none;color:inherit">
+      <div class="card" style="cursor:pointer">
+        <img src="${img}">
+        <h4>${product.title}</h4>
+        <p>${product.short_desc || ""}</p>
+      </div>
+    </a>
   `;
 }
 
-/* ---------- LOAD DATA ---------- */
+/* ---------- LOAD HOME ---------- */
 async function loadHome() {
-  const foodRes = await supabase
-    .from("food")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const propRes = await supabase
-    .from("properties")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const itemsRes = await supabase
-    .from("items")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5);
+  const [foodRes, propRes, itemsRes] = await Promise.all([
+    supabase.from("food").select("*").order("created_at", { ascending: false }).limit(5),
+    supabase.from("properties").select("*").order("created_at", { ascending: false }).limit(5),
+    supabase.from("items").select("*").order("created_at", { ascending: false }).limit(5)
+  ]);
 
   const food = foodRes.data || [];
   const properties = propRes.data || [];
   const items = itemsRes.data || [];
 
-  // Store for global search
   allProducts = [
     ...food.map(f => ({ ...f, type: "food" })),
     ...properties.map(p => ({ ...p, type: "property" })),
     ...items.map(i => ({ ...i, type: "item" }))
   ];
 
-  /* ---------- RENDER ---------- */
   foodDiv.innerHTML = food.length
-    ? food.map(f => card(f.title, f.short_desc, f.image)).join("")
+    ? food.map(f => card(f, "food")).join("")
     : "<p>No food yet</p>";
 
   propDiv.innerHTML = properties.length
-    ? properties.map(p =>
-        card(p.title, p.short_desc, p.images?.[0])
-      ).join("")
+    ? properties.map(p => card(p, "property")).join("")
     : "<p>No properties yet</p>";
 
   itemsDiv.innerHTML = items.length
-    ? items.map(i =>
-        card(i.title, i.short_desc, i.images?.[0])
-      ).join("")
+    ? items.map(i => card(i, "item")).join("")
     : "<p>No items yet</p>";
 }
 
@@ -75,26 +64,21 @@ searchInput.addEventListener("input", e => {
   const q = e.target.value.toLowerCase();
   if (!q) return loadHome();
 
-  const filtered = allProducts.filter(p =>
-    p.title?.toLowerCase().includes(q) ||
-    p.short_desc?.toLowerCase().includes(q)
-  );
-
   foodDiv.innerHTML = "";
   propDiv.innerHTML = "";
   itemsDiv.innerHTML = "";
 
-  filtered.forEach(p => {
-    const html = card(
-      p.title,
-      p.short_desc,
-      p.image || p.images?.[0]
-    );
-
-    if (p.type === "food") foodDiv.innerHTML += html;
-    if (p.type === "property") propDiv.innerHTML += html;
-    if (p.type === "item") itemsDiv.innerHTML += html;
-  });
+  allProducts
+    .filter(p =>
+      p.title?.toLowerCase().includes(q) ||
+      p.short_desc?.toLowerCase().includes(q)
+    )
+    .forEach(p => {
+      const html = card(p, p.type);
+      if (p.type === "food") foodDiv.innerHTML += html;
+      if (p.type === "property") propDiv.innerHTML += html;
+      if (p.type === "item") itemsDiv.innerHTML += html;
+    });
 });
 
 loadHome();
