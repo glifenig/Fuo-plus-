@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FUO Plus | Property Details</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .gallery {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    .gallery img {
+      height: 200px;
+      border-radius: 6px;
+    }
+
+    h1 { margin-bottom: 10px; }
+
+    .price {
+      color: #135bec;
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 6px 10px;
+      background: #eee;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #135bec;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<a href="property.html">← Back to Properties</a>
+
+<div id="content"></div>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ithiomhjbakdqhpqdnus.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0aGlvbWhqYmFrZHFocHFkbnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyODU2MDEsImV4cCI6MjA4MDg2MTYwMX0.H2cIypWgF5D6swr0WVKQ99GZE5WzBQ3C-hcHqN6x5LM"
+);
+
+const content = document.getElementById("content");
+const id = new URLSearchParams(window.location.search).get("id");
+
+/* ---------- LOAD PROPERTY ---------- */
+async function loadProperty() {
+  if (!id) {
+    content.innerHTML = "<p>Invalid property</p>";
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("properties")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
+    content.innerHTML = "<p>Property not found</p>";
+    return;
+  }
+
+  render(data);
+}
+
+/* ---------- RENDER ---------- */
+function render(p) {
+  const images = Array.isArray(p.images) ? p.images : [];
+
+  content.innerHTML = `
+    <div class="gallery">
+      ${images.map(img => `<img src="${img}">`).join("")}
+    </div>
+
+    <h1>${p.title}</h1>
+    <div class="price">₦${p.price}</div>
+    <div class="tag">${p.type === "rent" ? "For Rent" : "For Sale"}</div>
+
+    <p>${p.long_desc || ""}</p>
+
+    <button onclick="contact()">Contact Seller</button>
+  `;
+}
+
+/* ---------- CONTACT ---------- */
+function contact() {
+  alert("Contact feature coming next");
+}
+
+loadProperty();
+</script>
+
+</body>
+</html>
