@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Product Details</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    img { max-width: 100%; border-radius: 8px; }
+  </style>
+</head>
+<body>
+
+<a href="index.html">← Back</a>
+<h1 id="title"></h1>
+<img id="image">
+<p id="desc"></p>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ithiomhjbakdqhpqdnus.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0aGlvbWhqYmFrZHFocHFkbnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyODU2MDEsImV4cCI6MjA4MDg2MTYwMX0.H2cIypWgF5D6swr0WVKQ99GZE5WzBQ3C-hcHqN6x5LM"
+);
+
+const params = new URLSearchParams(window.location.search);
+const type = params.get("type");
+const id = params.get("id");
+
+async function loadDetails() {
+  const { data, error } = await supabase
+    .from(type === "item" ? "items" : type === "property" ? "properties" : "food")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (!data) return;
+
+  document.getElementById("title").textContent = data.title;
+  document.getElementById("desc").textContent = data.short_desc || "";
+
+  document.getElementById("image").src =
+    data.image || data.images?.[0] || "https://via.placeholder.com/400";
+}
+
+loadDetails();
+</script>
+
+</body>
+</html>
