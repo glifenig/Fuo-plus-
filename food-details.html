@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FUO Plus | Food Details</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+
+    img {
+      width: 100%;
+      max-height: 320px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .price-option {
+      border: 1px solid #ddd;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .price-option.active {
+      border-color: #135bec;
+      background: #eef3ff;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #135bec;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .back {
+      margin-bottom: 15px;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body>
+
+<a class="back" href="food.html">← Back to Food</a>
+
+<div id="content"></div>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ithiomhjbakdqhpqdnus.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0aGlvbWhqYmFrZHFocHFkbnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyODU2MDEsImV4cCI6MjA4MDg2MTYwMX0.H2cIypWgF5D6swr0WVKQ99GZE5WzBQ3C-hcHqN6x5LM"
+);
+
+const content = document.getElementById("content");
+
+const params = new URLSearchParams(window.location.search);
+const foodId = params.get("id");
+
+let selectedPrice = null;
+
+/* ---------- LOAD FOOD ---------- */
+async function loadFood() {
+  if (!foodId) {
+    content.innerHTML = "<p>Invalid food item</p>";
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("food")
+    .select("*")
+    .eq("id", foodId)
+    .single();
+
+  if (error || !data) {
+    content.innerHTML = "<p>Food not found</p>";
+    return;
+  }
+
+  renderFood(data);
+}
+
+/* ---------- RENDER ---------- */
+function renderFood(food) {
+  const image = food.image || "https://via.placeholder.com/500";
+  const prices = Array.isArray(food.prices) ? food.prices : [];
+
+  content.innerHTML = `
+    <img src="${image}">
+    <h1>${food.title}</h1>
+    <p>${food.long_desc || ""}</p>
+
+    <h3>Select option</h3>
+
+    <div id="prices">
+      ${
+        prices.length
+          ? prices.map((p, i) => `
+              <div class="price-option" onclick="selectPrice(${i})">
+                <strong>${p.label || "Option"}</strong><br>
+                ₦${p.price}
+              </div>
+            `).join("")
+          : "<p>No price options</p>"
+      }
+    </div>
+
+    <button id="addBtn" disabled>Add to Cart</button>
+  `;
+
+  window._prices = prices;
+}
+
+/* ---------- SELECT PRICE ---------- */
+function selectPrice(index) {
+  selectedPrice = window._prices[index];
+
+  document.querySelectorAll(".price-option").forEach(el =>
+    el.classList.remove("active")
+  );
+
+  document.querySelectorAll(".price-option")[index]
+    .classList.add("active");
+
+  document.getElementById("addBtn").disabled = false;
+}
+
+/* ---------- ADD TO CART ---------- */
+document.addEventListener("click", e => {
+  if (e.target.id !== "addBtn") return;
+
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+  cart.push({
+    id: foodId,
+    type: "food",
+    title: document.querySelector("h1").textContent,
+    price: selectedPrice,
+    qty: 1
+  });
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+
+  alert("Added to cart");
+});
+
+loadFood();
+</script>
+
+</body>
+</html>
