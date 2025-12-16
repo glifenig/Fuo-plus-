@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FUO Plus | Food</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    .price {
+      color: #135bec;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<a href="index.html">← Home</a>
+
+<h1>Food Menu</h1>
+
+<div id="foodGrid" class="grid"></div>
+<p id="empty"></p>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ithiomhjbakdqhpqdnus.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0aGlvbWhqYmFrZHFocHFkbnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyODU2MDEsImV4cCI6MjA4MDg2MTYwMX0.H2cIypWgF5D6swr0WVKQ99GZE5WzBQ3C-hcHqN6x5LM"
+);
+
+const foodGrid = document.getElementById("foodGrid");
+const emptyText = document.getElementById("empty");
+
+/* ---------- FOOD CARD ---------- */
+function foodCard(food) {
+  const image =
+    food.image ||
+    "https://via.placeholder.com/300";
+
+  // Get lowest price from price options
+  let priceText = "";
+  if (Array.isArray(food.prices) && food.prices.length) {
+    const lowest = Math.min(...food.prices.map(p => Number(p.price)));
+    priceText = `From ₦${lowest}`;
+  }
+
+  return `
+    <div class="card" onclick="openFood('${food.id}')">
+      <img src="${image}">
+      <h4>${food.title}</h4>
+      <p>${food.short_desc || ""}</p>
+      <div class="price">${priceText}</div>
+    </div>
+  `;
+}
+
+/* ---------- LOAD FOOD ---------- */
+async function loadFood() {
+  const { data, error } = await supabase
+    .from("food")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    emptyText.textContent = "Failed to load food";
+    return;
+  }
+
+  if (!data || !data.length) {
+    emptyText.textContent = "No food available";
+    return;
+  }
+
+  emptyText.textContent = "";
+  foodGrid.innerHTML = data.map(foodCard).join("");
+}
+
+/* ---------- OPEN DETAILS ---------- */
+function openFood(id) {
+  window.location.href = `food-details.html?id=${id}`;
+}
+
+loadFood();
+</script>
+
+</body>
+</html>
