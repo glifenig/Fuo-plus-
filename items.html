@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FUO Plus | Items</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    h1 { margin-bottom: 20px; }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      background: #ddd;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    button.active {
+      background: #135bec;
+      color: white;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+
+    .card-body {
+      padding: 10px;
+    }
+
+    .price {
+      color: #135bec;
+      font-weight: bold;
+    }
+
+    .tag {
+      font-size: 12px;
+      background: #eee;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<a href="index.html">← Home</a>
+<h1>Items</h1>
+
+<div class="filters">
+  <button onclick="filterType('all')" class="active">All</button>
+  <button onclick="filterType('new')">New</button>
+  <button onclick="filterType('used')">Used</button>
+</div>
+
+<div id="grid" class="grid"></div>
+<p id="empty"></p>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ithiomhjbakdqhpqdnus.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0aGlvbWhqYmFrZHFocHFkbnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyODU2MDEsImV4cCI6MjA4MDg2MTYwMX0.H2cIypWgF5D6swr0WVKQ99GZE5WzBQ3C-hcHqN6x5LM"
+);
+
+const grid = document.getElementById("grid");
+const emptyText = document.getElementById("empty");
+
+let allItems = [];
+let currentFilter = "all";
+
+/* ---------- LOAD ITEMS ---------- */
+async function loadItems() {
+  const { data, error } = await supabase
+    .from("items")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error || !data || !data.length) {
+    emptyText.textContent = "No items available";
+    return;
+  }
+
+  allItems = data;
+  render();
+}
+
+/* ---------- RENDER ---------- */
+function render() {
+  const filtered =
+    currentFilter === "all"
+      ? allItems
+      : allItems.filter(i => i.condition === currentFilter);
+
+  if (!filtered.length) {
+    grid.innerHTML = "";
+    emptyText.textContent = "No items found";
+    return;
+  }
+
+  emptyText.textContent = "";
+  grid.innerHTML = filtered.map(i => `
+    <div class="card" onclick="openItem('${i.id}')">
+      <img src="${i.images?.[0] || 'https://via.placeholder.com/300'}">
+      <div class="card-body">
+        <h4>${i.title}</h4>
+        <p>${i.short_desc || ""}</p>
+        <div class="price">₦${i.price}</div>
+        <span class="tag">${i.condition}</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ---------- FILTER ---------- */
+function filterType(type) {
+  currentFilter = type;
+  document.querySelectorAll(".filters button").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+  render();
+}
+
+/* ---------- DETAILS ---------- */
+function openItem(id) {
+  window.location.href = `item-details.html?id=${id}`;
+}
+
+loadItems();
+</script>
+
+</body>
+</html>
